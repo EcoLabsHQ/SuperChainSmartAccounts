@@ -262,11 +262,13 @@ contract SuperChainModuleUpgradeable is
         SuperChainStorage storage s = superChainStorage();
         s._resolver = resolver;
     }
+
     function addTiersTreshold(uint256[] memory _tresholds)  external onlyOwner{
         for (uint256 i = 0; i < _tresholds.length; i++) {
             _addTierTreshold(_tresholds[i]);
         }
     }
+
     function _addTierTreshold(uint256 _treshold) internal {
         SuperChainStorage storage s = superChainStorage();
         if (s._tierTreshold.length > 0) {
