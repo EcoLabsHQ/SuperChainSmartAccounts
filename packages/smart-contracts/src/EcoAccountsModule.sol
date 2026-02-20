@@ -29,6 +29,8 @@ contract EcoAccountsModule is Initializable, OwnableUpgradeable, UUPSUpgradeable
     struct EcoAccountsStorage {
         /// @dev Address of this module for delegatecall setup
         address ecoAccountsModule;
+        /// @dev Address of the EcoAccountBadges contract (only caller for incrementSuperChainPoints)
+        address badgesContract;
         /// @dev Tier thresholds for level progression
         uint256[] tierTreshold;
         /// @dev Mapping from Safe address to Account data
@@ -66,6 +68,7 @@ contract EcoAccountsModule is Initializable, OwnableUpgradeable, UUPSUpgradeable
     event TierTresholdAdded(uint256 treshold);
     event TierTresholdUpdated(uint256 index, uint256 newTreshold);
     event PointsIncremented(address indexed recipient, uint256 points, bool levelUp);
+    event BadgesContractSet(address indexed badgesContract);
 
     /*//////////////////////////////////////////////////////////////
                                 ERRORS
@@ -83,6 +86,8 @@ contract EcoAccountsModule is Initializable, OwnableUpgradeable, UUPSUpgradeable
     error IndexOutOfBounds();
     error InvalidThresholdUpdate();
     error ThresholdMustBeHigher();
+    error NotBadgesContract();
+
 
     /*//////////////////////////////////////////////////////////////
                             INITIALIZATION
@@ -212,7 +217,7 @@ contract EcoAccountsModule is Initializable, OwnableUpgradeable, UUPSUpgradeable
 
     /**
      * @notice Increments points for a recipient account
-     * @dev Only callable by authorized data sources. Updates level if threshold is crossed
+     * @dev Only callable by EcoAccountBadges contract. Updates level if threshold is crossed
      * @param _points The number of points to add
      * @param recipient The Safe address to credit
      * @return levelUp Whether the account leveled up
@@ -222,6 +227,7 @@ contract EcoAccountsModule is Initializable, OwnableUpgradeable, UUPSUpgradeable
         address recipient
     ) external returns (bool levelUp) {
         EcoAccountsStorage storage $ = _getStorage();
+        if (msg.sender != $.badgesContract) revert NotBadgesContract();
         Account storage _account = $.accounts[recipient];
 
         if (_account.safe == address(0)) revert AccountNotFound();
@@ -267,6 +273,16 @@ contract EcoAccountsModule is Initializable, OwnableUpgradeable, UUPSUpgradeable
     //////////////////////////////////////////////////////////////*/
 
     /**
+     * @notice Sets the EcoAccountBadges contract address
+     * @param _badgesContract The badges contract address
+     */
+    function setBadgesContract(address _badgesContract) external onlyOwner {
+        EcoAccountsStorage storage $ = _getStorage();
+        $.badgesContract = _badgesContract;
+        emit BadgesContractSet(_badgesContract);
+    }
+
+    /**
      * @notice Adds multiple tier thresholds
      * @dev Each threshold must be higher than the previous
      * @param _tresholds Array of thresholds to add
@@ -308,6 +324,15 @@ contract EcoAccountsModule is Initializable, OwnableUpgradeable, UUPSUpgradeable
     function getAccount(address _safe) external view returns (Account memory) {
         EcoAccountsStorage storage $ = _getStorage();
         return $.accounts[_safe];
+    }
+
+    /**
+     * @notice Gets the EcoAccountBadges contract address
+     * @return The badges contract address
+     */
+    function getBadgesContract() external view returns (address) {
+        EcoAccountsStorage storage $ = _getStorage();
+        return $.badgesContract;
     }
 
     /**
