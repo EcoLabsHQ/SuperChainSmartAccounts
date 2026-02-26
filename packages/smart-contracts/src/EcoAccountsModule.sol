@@ -27,8 +27,6 @@ contract EcoAccountsModule is Initializable, OwnableUpgradeable, UUPSUpgradeable
 
     /// @custom:storage-location erc7201:openzeppelin.storage.eco_accounts_module
     struct EcoAccountsStorage {
-        /// @dev Address of this module for delegatecall setup
-        address ecoAccountsModule;
         /// @dev Address of the EcoAccountBadges contract (only caller for incrementSuperChainPoints)
         address badgesContract;
         /// @dev Tier thresholds for level progression
@@ -105,8 +103,6 @@ contract EcoAccountsModule is Initializable, OwnableUpgradeable, UUPSUpgradeable
     function initialize(address owner) public initializer {
         __Ownable_init(owner);
         __UUPSUpgradeable_init();
-        EcoAccountsStorage storage $ = _getStorage();
-        $.ecoAccountsModule = address(this);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -115,7 +111,6 @@ contract EcoAccountsModule is Initializable, OwnableUpgradeable, UUPSUpgradeable
 
     /**
      * @notice Sets up an EcoAccount for a Safe wallet
-     * @dev Must be called via delegatecall from the Safe during setup
      * @param _noun The noun metadata for the account avatar
      * @param _superChainID The unique SuperChain identifier (without .superchain suffix)
      */
@@ -124,7 +119,7 @@ contract EcoAccountsModule is Initializable, OwnableUpgradeable, UUPSUpgradeable
         string calldata _superChainID
     ) external {
         EcoAccountsStorage storage $ = _getStorage();
-        address _safe = address(this);
+        address _safe = msg.sender;
 
         if ($.isSuperChainIdTaken[keccak256(abi.encode(_superChainID))]) {
             revert SuperChainIdAlreadyTaken();
@@ -135,8 +130,6 @@ contract EcoAccountsModule is Initializable, OwnableUpgradeable, UUPSUpgradeable
 
         $.safeToSuperChainID[_safe] = string.concat(_superChainID, ".superchain");
         $.isSuperChainIdTaken[keccak256(abi.encode(_superChainID))] = true;
-
-        ISafe(_safe).enableModule($.ecoAccountsModule);
 
         $.accounts[_safe] = Account({
             safe: _safe,

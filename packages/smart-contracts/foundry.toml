@@ -15,7 +15,7 @@ fs_permissions = [{ access = "read-write", path = "./"}]
 [etherscan]
 sepolia = { key = "I36FHHV8SEQP38FSSMQUCI92BJK4H5PJSE" }
 optimism = { key = "UGB21JYI7XRY68M6IBNNYHPJYTSX2V5ATX" }
-optimism-sepolia = { key = "UGB21JYI7XRY68M6IBNNYHPJYTSX2V5ATX" }
+optimism-sepolia = { key = "I36FHHV8SEQP38FSSMQUCI92BJK4H5PJSE" }
 
 [rpc_endpoints]
 sepolia = "https://rpc.ankr.com/eth_sepolia/45136167dd68f8dc7c5908ff83da7fe34e6fd6d52b9a0b3f6abe35aa5bcf5324"

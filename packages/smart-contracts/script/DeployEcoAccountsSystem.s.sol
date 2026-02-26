@@ -27,13 +27,13 @@ contract DeployEcoAccountsSystem is Script {
                               SALTS
     //////////////////////////////////////////////////////////////*/
 
-    bytes32 constant MODULE_IMPL_SALT = keccak256("EcoAccountsModule.impl.v1");
+    bytes32 constant MODULE_IMPL_SALT = keccak256("EcoAccountsModule.impl.v1.0.2");
     bytes32 constant MODULE_PROXY_SALT =
-        keccak256("EcoAccountsModule.proxy.v1");
-    bytes32 constant BADGES_IMPL_SALT = keccak256("EcoAccountsBadges.impl.v1");
+        keccak256("EcoAccountsModule.proxy.v1.0.2");
+    bytes32 constant BADGES_IMPL_SALT = keccak256("EcoAccountsBadges.impl.v1.0.2");
     bytes32 constant BADGES_PROXY_SALT =
-        keccak256("EcoAccountsBadges.proxy.v1");
-    bytes32 constant GUARD_SALT = keccak256("EcoAccountsGuard.v1");
+        keccak256("EcoAccountsBadges.proxy.v1.0.2");
+    bytes32 constant GUARD_SALT = keccak256("EcoAccountsGuard.v1.0.2");
 
     /*//////////////////////////////////////////////////////////////
                            DEPLOYMENT RESULTS
@@ -55,7 +55,6 @@ contract DeployEcoAccountsSystem is Script {
 
     /**
      * @notice Full deployment with all configurations
-     * @param owner The owner address for all contracts (also controls badge minting)
      * @return result The deployed contract addresses
      */
     function run() public returns (DeploymentResult memory result) {
