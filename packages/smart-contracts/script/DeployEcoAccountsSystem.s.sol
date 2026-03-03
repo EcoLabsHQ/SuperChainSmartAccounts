@@ -27,13 +27,18 @@ contract DeployEcoAccountsSystem is Script {
                               SALTS
     //////////////////////////////////////////////////////////////*/
 
-    bytes32 constant MODULE_IMPL_SALT = keccak256("EcoAccountsModule.impl.v1.0.2");
+    string constant VERSION = "v1.0.4";
+
+    bytes32 constant MODULE_IMPL_SALT =
+        keccak256(abi.encodePacked("EcoAccountsModule.impl.", VERSION));
     bytes32 constant MODULE_PROXY_SALT =
-        keccak256("EcoAccountsModule.proxy.v1.0.2");
-    bytes32 constant BADGES_IMPL_SALT = keccak256("EcoAccountsBadges.impl.v1.0.2");
+        keccak256(abi.encodePacked("EcoAccountsModule.proxy.", VERSION));
+    bytes32 constant BADGES_IMPL_SALT =
+        keccak256(abi.encodePacked("EcoAccountsBadges.impl.", VERSION));
     bytes32 constant BADGES_PROXY_SALT =
-        keccak256("EcoAccountsBadges.proxy.v1.0.2");
-    bytes32 constant GUARD_SALT = keccak256("EcoAccountsGuard.v1.0.2");
+        keccak256(abi.encodePacked("EcoAccountsBadges.proxy.", VERSION));
+    bytes32 constant GUARD_SALT =
+        keccak256(abi.encodePacked("EcoAccountsGuard.", VERSION));
 
     /*//////////////////////////////////////////////////////////////
                            DEPLOYMENT RESULTS

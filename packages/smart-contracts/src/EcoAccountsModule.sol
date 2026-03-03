@@ -45,6 +45,8 @@ contract EcoAccountsModule is Initializable, OwnableUpgradeable, UUPSUpgradeable
         mapping(bytes32 idHash => bool) isSuperChainIdTaken;
         /// @dev Mapping from Safe to its SuperChain ID
         mapping(address safe => string superChainID) safeToSuperChainID;
+        /// @dev Mapping from data source to its original Safe (once bound, cannot be added to another Safe)
+        mapping(address dataSource => address originalSafe) dataSourceOriginalSafe;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -63,6 +65,7 @@ contract EcoAccountsModule is Initializable, OwnableUpgradeable, UUPSUpgradeable
     event DataSourceAddRequested(address indexed safe, address indexed dataSource);
     event DataSourceAddRequestRemoved(address indexed safe, address indexed dataSource);
     event DataSourceAdded(address indexed safe, address indexed dataSource, string superChainID);
+    event DataSourceRemoved(address indexed safe, address indexed dataSource);
     event TierTresholdAdded(uint256 treshold);
     event TierTresholdUpdated(uint256 index, uint256 newTreshold);
     event PointsIncremented(address indexed recipient, uint256 points, bool levelUp);
@@ -80,6 +83,8 @@ contract EcoAccountsModule is Initializable, OwnableUpgradeable, UUPSUpgradeable
     error DataSourceAlreadyPending();
     error NotDataSource();
     error DataSourceNotPending();
+    error DataSourceNotAdded();
+    error DataSourceBoundToAnotherSafe();
     error AccountNotFound();
     error IndexOutOfBounds();
     error InvalidThresholdUpdate();
@@ -167,7 +172,7 @@ contract EcoAccountsModule is Initializable, OwnableUpgradeable, UUPSUpgradeable
 
     /**
      * @notice Accepts a pending data source invite
-     * @dev Only the invited data source can accept
+     * @dev Only the invited data source can accept. Once bound to a Safe, cannot be added to another
      * @param _safe The Safe address that sent the invite
      * @param _dataSource The data source accepting (must be msg.sender)
      */
@@ -176,6 +181,17 @@ contract EcoAccountsModule is Initializable, OwnableUpgradeable, UUPSUpgradeable
 
         if (msg.sender != _dataSource) revert NotDataSource();
         if (!_isDataSourcePending($, _safe, _dataSource)) revert DataSourceNotPending();
+
+        // Check if data source is bound to another Safe
+        address originalSafe = $.dataSourceOriginalSafe[_dataSource];
+        if (originalSafe != address(0) && originalSafe != _safe) {
+            revert DataSourceBoundToAnotherSafe();
+        }
+
+        // Bind data source to this Safe permanently (only on first addition)
+        if (originalSafe == address(0)) {
+            $.dataSourceOriginalSafe[_dataSource] = _safe;
+        }
 
         // Add to active data sources
         $.safeToDataSources[_safe].push(_dataSource);
@@ -202,6 +218,23 @@ contract EcoAccountsModule is Initializable, OwnableUpgradeable, UUPSUpgradeable
         _removePendingInvite($, _safe, _dataSource);
 
         emit DataSourceAddRequestRemoved(_safe, _dataSource);
+    }
+
+    /**
+     * @notice Removes an active data source from a Safe
+     * @dev Only Safe owners can remove data sources
+     * @param _safe The Safe address
+     * @param _dataSource The data source to remove
+     */
+    function removeDataSource(address _safe, address _dataSource) external {
+        EcoAccountsStorage storage $ = _getStorage();
+
+        if (!ISafe(_safe).isOwner(msg.sender)) revert NotSafeOwner();
+        if (!_isDataSourceAdded($, _safe, _dataSource)) revert DataSourceNotAdded();
+
+        _removeDataSource($, _safe, _dataSource);
+
+        emit DataSourceRemoved(_safe, _dataSource);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -359,6 +392,16 @@ contract EcoAccountsModule is Initializable, OwnableUpgradeable, UUPSUpgradeable
     }
 
     /**
+     * @notice Gets the original Safe a data source is bound to
+     * @param _dataSource The data source address
+     * @return The Safe address (address(0) if not bound)
+     */
+    function getDataSourceOriginalSafe(address _dataSource) external view returns (address) {
+        EcoAccountsStorage storage $ = _getStorage();
+        return $.dataSourceOriginalSafe[_dataSource];
+    }
+
+    /**
      * @notice Gets the points needed for the next level
      * @param _safe The Safe address
      * @return The threshold for the next level
@@ -442,6 +485,29 @@ contract EcoAccountsModule is Initializable, OwnableUpgradeable, UUPSUpgradeable
 
         $.safeToDataSourceInvites[_safe].pop();
         delete $.pendingInviteIndex[_safe][_dataSource];
+    }
+
+    /**
+     * @dev Removes an active data source using swap and pop
+     * @param $ Storage pointer
+     * @param _safe The Safe address
+     * @param _dataSource The data source to remove
+     */
+    function _removeDataSource(
+        EcoAccountsStorage storage $,
+        address _safe,
+        address _dataSource
+    ) internal {
+        uint256 index = $.dataSourceIndex[_safe][_dataSource] - 1;
+        address lastDataSource = $.safeToDataSources[_safe][
+            $.safeToDataSources[_safe].length - 1
+        ];
+
+        $.safeToDataSources[_safe][index] = lastDataSource;
+        $.dataSourceIndex[_safe][lastDataSource] = index + 1;
+
+        $.safeToDataSources[_safe].pop();
+        delete $.dataSourceIndex[_safe][_dataSource];
     }
 
     /**
