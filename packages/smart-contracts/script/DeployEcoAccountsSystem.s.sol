@@ -27,7 +27,7 @@ contract DeployEcoAccountsSystem is Script {
                               SALTS
     //////////////////////////////////////////////////////////////*/
 
-    string constant VERSION = "v1.0.4";
+    string constant VERSION = "v1.0.5";
 
     bytes32 constant MODULE_IMPL_SALT =
         keccak256(abi.encodePacked("EcoAccountsModule.impl.", VERSION));

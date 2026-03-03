@@ -78,7 +78,7 @@ contract EcoAccountsModule is Initializable, OwnableUpgradeable, UUPSUpgradeable
     error MaxLvlReached();
     error SuperChainIdAlreadyTaken();
     error InvalidSuperChainIdSuffix();
-    error NotSafeOwner();
+    error CallerNotSafe();
     error DataSourceAlreadyAdded();
     error DataSourceAlreadyPending();
     error NotDataSource();
@@ -153,14 +153,14 @@ contract EcoAccountsModule is Initializable, OwnableUpgradeable, UUPSUpgradeable
 
     /**
      * @notice Requests to add a data source to a Safe
-     * @dev Only Safe owners can request. Creates a pending invite for the data source
+     * @dev Only the Safe itself can request. Creates a pending invite for the data source
      * @param _safe The Safe address
      * @param _newDataSource The data source address to invite
      */
     function requestAddDataSource(address _safe, address _newDataSource) external {
         EcoAccountsStorage storage $ = _getStorage();
 
-        if (!ISafe(_safe).isOwner(msg.sender)) revert NotSafeOwner();
+        if (msg.sender != _safe) revert CallerNotSafe();
         if (_isDataSourceAdded($, _safe, _newDataSource)) revert DataSourceAlreadyAdded();
         if (_isDataSourcePending($, _safe, _newDataSource)) revert DataSourceAlreadyPending();
 
@@ -205,14 +205,14 @@ contract EcoAccountsModule is Initializable, OwnableUpgradeable, UUPSUpgradeable
 
     /**
      * @notice Removes a pending data source invite
-     * @dev Only Safe owners can remove pending invites
+     * @dev Only the Safe itself can remove pending invites
      * @param _safe The Safe address
      * @param _dataSource The data source to remove from pending
      */
     function removeAddDataSourceRequest(address _safe, address _dataSource) external {
         EcoAccountsStorage storage $ = _getStorage();
 
-        if (!ISafe(_safe).isOwner(msg.sender)) revert NotSafeOwner();
+        if (msg.sender != _safe) revert CallerNotSafe();
         if (!_isDataSourcePending($, _safe, _dataSource)) revert DataSourceNotPending();
 
         _removePendingInvite($, _safe, _dataSource);
@@ -222,14 +222,14 @@ contract EcoAccountsModule is Initializable, OwnableUpgradeable, UUPSUpgradeable
 
     /**
      * @notice Removes an active data source from a Safe
-     * @dev Only Safe owners can remove data sources
+     * @dev Only the Safe itself can remove data sources
      * @param _safe The Safe address
      * @param _dataSource The data source to remove
      */
     function removeDataSource(address _safe, address _dataSource) external {
         EcoAccountsStorage storage $ = _getStorage();
 
-        if (!ISafe(_safe).isOwner(msg.sender)) revert NotSafeOwner();
+        if (msg.sender != _safe) revert CallerNotSafe();
         if (!_isDataSourceAdded($, _safe, _dataSource)) revert DataSourceNotAdded();
 
         _removeDataSource($, _safe, _dataSource);
